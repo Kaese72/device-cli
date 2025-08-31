@@ -1,15 +1,20 @@
 """Script file for huemie device cli"""
 
 import argparse
+
+import requests
 import huemie.cli.devicesget
 import huemie.cli.devicecapabilitytrigger
 import huemie.cli.groupcapabilitytrigger
 import huemie.cli.groupsget
 import huemie.cli.adapterput
+import huemie.cli.attributeaudits
+
+HUEMIE_DEFAULT_BASE = "http://app.huemie.space"
 
 PARSER = argparse.ArgumentParser(description="Huemie device cli")
 PARSER.add_argument(
-    "--base-url", type=str, dest="base_url", default="http://app.huemie.space"
+    "--base-url", type=str, dest="base_url", default=HUEMIE_DEFAULT_BASE, help=f"Base url, like '{HUEMIE_DEFAULT_BASE}'"
 )
 MAIN_SUB = PARSER.add_subparsers(required=True)
 
@@ -27,7 +32,16 @@ huemie.cli.groupcapabilitytrigger.argparse_expand(GROUPS_SUB.add_parser("trigger
 ADAPTERS_PARSER = MAIN_SUB.add_parser("adapters")
 ADAPTERS_SUB = ADAPTERS_PARSER.add_subparsers(required=True)
 huemie.cli.adapterput.argparse_expand(ADAPTERS_SUB.add_parser("update"))
+# Audits
+AUDITS_PARSER = MAIN_SUB.add_parser("audits")
+AUDITS_SUB = AUDITS_PARSER.add_subparsers(required=True)
+huemie.cli.attributeaudits.argparse_expand(AUDITS_SUB.add_parser("attributes"))
 
 # Parse and run
 ARGS = PARSER.parse_args()
-ARGS.func(ARGS)
+try:
+    ARGS.func(ARGS)
+except requests.HTTPError as exc:
+    print(f"HTTP error occurred: {exc.response.text}")
+except Exception as exc:
+    print(f"Error: {exc}")
